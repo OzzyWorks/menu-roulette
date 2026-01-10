@@ -110,9 +110,10 @@ const App: React.FC = () => {
       } else {
         alert("メニューが見つかりませんでした。別の写真を試してください。");
       }
-    } catch (error) {
-      console.error(error);
-      alert("解析中にエラーが発生しました。インターネット接続を確認してください。");
+    } catch (error: any) {
+      console.error('画像解析エラー:', error);
+      const errorMessage = error?.message || error?.toString() || '不明なエラー';
+      alert(`解析中にエラーが発生しました:\n\n${errorMessage}\n\nAPI キーが正しく設定されているか確認してください。`);
     } finally {
       setLoading(false);
       e.target.value = '';
