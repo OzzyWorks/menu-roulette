@@ -1,5 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
+import { extractMenuItemsWithTesseract } from './tesseractService';
 
 export const extractMenuItemsFromImage = async (base64Data: string): Promise<string[]> => {
   // Try to get API key from multiple sources
@@ -11,13 +12,10 @@ export const extractMenuItemsFromImage = async (base64Data: string): Promise<str
   
   console.log('API Key check:', apiKey ? `Found (length: ${apiKey.length})` : 'Not found');
   
+  // If no API key, use Tesseract (free OCR)
   if (!apiKey) {
-    const userKey = prompt('Gemini API キーを入力してください:\n\nhttps://aistudio.google.com/apikey で取得できます');
-    if (userKey) {
-      localStorage.setItem('gemini_api_key', userKey.trim());
-      return extractMenuItemsFromImage(base64Data);
-    }
-    throw new Error('Gemini API キーが設定されていません。');
+    console.log('No API key found, using Tesseract OCR (free)');
+    return extractMenuItemsWithTesseract(base64Data);
   }
   
   try {
@@ -57,11 +55,16 @@ export const extractMenuItemsFromImage = async (base64Data: string): Promise<str
   } catch (error: any) {
     console.error("Gemini API エラー:", error);
     
+    // If API quota exceeded, fall back to Tesseract
+    if (error?.message?.includes('quota') || error?.message?.includes('limit') || error?.message?.includes('429')) {
+      console.log('API制限に達しました。無料の Tesseract OCR にフォールバック中...');
+      alert('Gemini API の制限に達しました。無料の OCR に切り替えます。');
+      return extractMenuItemsWithTesseract(base64Data);
+    }
+    
     // Provide more specific error messages
     if (error?.message?.includes('API key')) {
       throw new Error('API キーが無効です。正しいキーを設定してください。');
-    } else if (error?.message?.includes('quota')) {
-      throw new Error('API の使用量制限に達しました。');
     } else if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
       throw new Error('ネットワークエラー: インターネット接続を確認してください。');
     }
