@@ -1,0 +1,7 @@
+{
+  "name": "Menu Roulette",
+  "description": "Upload a photo of any restaurant menu, handwritten list, or ticket machine. AI extracts items for a fun roulette selection!",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
