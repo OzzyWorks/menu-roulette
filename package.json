@@ -8,8 +8,9 @@
     "dev:sandbox": "vite --port 3000 --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && wrangler pages deploy dist",
-    "deploy:prod": "npm run build && wrangler pages deploy dist --project-name menu-roulette",
+    "deploy:cloudflare": "npm run build && wrangler pages deploy dist",
+    "deploy:cloudflare:prod": "npm run build && wrangler pages deploy dist --project-name menu-roulette",
+    "deploy:github": "npm run build && gh-pages -d dist",
     "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
     "test": "curl http://localhost:3000",
     "git:init": "git init && git add . && git commit -m 'Initial commit'",
@@ -18,15 +19,16 @@
     "git:log": "git log --oneline"
   },
   "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
     "@google/genai": "^1.35.0",
-    "lucide-react": "^0.562.0"
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250705.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "gh-pages": "^6.3.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "wrangler": "^3.78.0"

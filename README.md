@@ -5,7 +5,8 @@ AIがメニュー画像を解析して、ルーレットで選んでくれるWeb
 ## 🌐 デモ
 
 - **開発サーバー**: https://3000-ir5dw8a81deqz2nu7mn4i-3844e1b6.sandbox.novita.ai
-- **本番デプロイ**: Coming soon (Cloudflare Pages)
+- **GitHub Pages**: Coming soon
+- **Cloudflare Pages**: Coming soon (オプション)
 
 ## ✨ 主な機能
 
@@ -37,8 +38,8 @@ AIがメニュー画像を解析して、ルーレットで選んでくれるWeb
 - **ビルドツール**: Vite 6
 - **スタイリング**: TailwindCSS (CDN)
 - **アイコン**: Lucide React
-- **AI**: Google Gemini API
-- **デプロイ**: Cloudflare Pages (予定)
+- **AI**: Google Gemini API (ブラウザから直接呼び出し)
+- **デプロイ**: GitHub Pages / Cloudflare Pages
 
 ## 📊 データモデル
 
@@ -108,21 +109,51 @@ npm run preview
 
 ## 📦 デプロイ
 
-### Cloudflare Pages へのデプロイ (予定)
+### オプション 1: GitHub Pages (推奨)
+
+#### 自動デプロイ (GitHub Actions)
+
+1. **リポジトリを作成してプッシュ**
+```bash
+git remote add origin https://github.com/YOUR_USERNAME/menu-roulette.git
+git push -u origin main
+```
+
+2. **GitHub Secrets を設定**
+   - GitHub リポジトリの Settings → Secrets and variables → Actions
+   - `GEMINI_API_KEY` を追加（あなたの Gemini API キー）
+
+3. **GitHub Pages を有効化**
+   - Settings → Pages
+   - Source: "GitHub Actions" を選択
+
+4. **自動デプロイ**
+   - main ブランチにプッシュすると自動的にデプロイされます
+   - デプロイ先: `https://YOUR_USERNAME.github.io/menu-roulette/`
+
+#### 手動デプロイ
+
+```bash
+# gh-pages パッケージをインストール (初回のみ)
+npm install
+
+# ビルドして GitHub Pages にデプロイ
+npm run deploy:github
+```
+
+### オプション 2: Cloudflare Pages
 
 ```bash
 # ビルドしてデプロイ
-npm run deploy:prod
+npm run deploy:cloudflare:prod
 ```
 
-### 環境変数の設定
-Cloudflare Pages のダッシュボードで以下の環境変数を設定してください：
-- `GEMINI_API_KEY`: Google Gemini API キー
+Cloudflare Pages のダッシュボードで `GEMINI_API_KEY` 環境変数を設定してください。
 
 ## 🎯 次のステップ
 
 1. **GitHub へのプッシュ** - コードをリポジトリに保存
-2. **Cloudflare Pages デプロイ** - 本番環境へデプロイ
+2. **GitHub Pages デプロイ** - 無料で公開
 3. **メニュー履歴機能** - 過去の抽選結果を保存
 4. **カテゴリ機能** - メニューをカテゴリ分け
 5. **画像プレビュー** - アップロードした画像を表示
@@ -131,6 +162,9 @@ Cloudflare Pages のダッシュボードで以下の環境変数を設定して
 
 ```
 webapp/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml       # GitHub Actions デプロイ設定
 ├── src/
 │   ├── App.tsx              # メインアプリケーション
 │   ├── index.tsx            # エントリポイント
@@ -144,10 +178,25 @@ webapp/
 ├── public/                  # 静的ファイル
 ├── index.html              # HTML テンプレート
 ├── vite.config.ts          # Vite 設定
-├── wrangler.jsonc          # Cloudflare 設定
+├── wrangler.jsonc          # Cloudflare 設定 (オプション)
 ├── package.json            # 依存関係
 └── ecosystem.config.cjs    # PM2 設定
 ```
+
+## ⚠️ 重要な注意事項
+
+### Gemini API キーについて
+- このアプリは**ブラウザから直接 Gemini API を呼び出します**
+- API キーは**ビルド時に埋め込まれます**（`process.env.API_KEY`）
+- セキュリティ上、以下の対策を推奨します：
+  - API キーに使用量制限を設定
+  - Gemini API の API Key Restrictions で許可するドメインを制限
+  - 本番環境では環境変数経由で設定（GitHub Secrets など）
+
+### GitHub Pages の制約
+- **静的サイトのみ**: サーバーサイド処理は不可
+- **API 呼び出し**: ブラウザから直接 API を呼び出す必要がある
+- **CORS**: Gemini API は CORS を許可しているため問題なし
 
 ## 📄 ライセンス
 
@@ -160,4 +209,5 @@ MIT License
 ---
 
 **最終更新**: 2026-01-10
-**ステータス**: ✅ 開発環境で動作確認済み | ⏳ 本番デプロイ待ち
+**ステータス**: ✅ 開発環境で動作確認済み | ✅ GitHub Pages 対応完了
+
