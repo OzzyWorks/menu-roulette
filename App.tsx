@@ -4,6 +4,7 @@ import { Camera, Image as ImageIcon, Sparkles, RotateCcw, Search, Cpu, FileText,
 import { MenuItem } from './types';
 import { extractMenuItemsFromImage } from './services/geminiService';
 import { MenuManager } from './components/MenuManager';
+import { MenuListManager } from './components/MenuListManager';
 import { Roulette } from './components/Roulette';
 
 const LOCAL_STORAGE_KEY = 'menu_roulette_items_v5';
@@ -124,6 +125,17 @@ const App: React.FC = () => {
   const removeItem = (id: string) => setItems(prev => prev.filter(item => item.id !== id));
   const updateItem = (id: string, name: string) => setItems(prev => prev.map(item => item.id === id ? { ...item, name } : item));
 
+  // Load saved menu list
+  const handleLoadMenuList = (savedItems: MenuItem[]) => {
+    setItems(savedItems);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Save notification
+  const handleSaveNotification = () => {
+    setLastSaved(new Date().toLocaleTimeString());
+  };
+
   // Load Demo Data
   const loadSampleData = () => {
     const newItems: MenuItem[] = SAMPLE_ITEMS.map(name => ({
@@ -219,6 +231,12 @@ const App: React.FC = () => {
             onRemove={removeItem} 
             onUpdate={updateItem} 
             onLoadSample={loadSampleData}
+          />
+
+          <MenuListManager 
+            currentItems={items}
+            onLoadMenuList={handleLoadMenuList}
+            onSaveCurrentList={handleSaveNotification}
           />
 
           {items.length > 0 && (
