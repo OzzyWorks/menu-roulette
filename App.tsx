@@ -147,7 +147,7 @@ const App: React.FC = () => {
 
   // Factory Reset / Initialize
   const initializeApp = useCallback(() => {
-    if (window.confirm("アプリを初期化しますか？保存されたメニューリストもすべて削除されます。")) {
+    if (window.confirm("アプリを初期化しますか？保存済みリストは削除されません。")) {
       setItems([]);
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       setLastSaved('');
