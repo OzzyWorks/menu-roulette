@@ -1,6 +1,4 @@
 
-import OpenAI from 'openai';
-
 export const extractMenuItemsWithOpenAI = async (base64Data: string): Promise<string[]> => {
   const apiKey = process.env.OPENAI_API_KEY || 
                  import.meta.env.VITE_OPENAI_API_KEY ||
@@ -14,20 +12,22 @@ export const extractMenuItemsWithOpenAI = async (base64Data: string): Promise<st
   try {
     console.log('OpenAI API で画像解析中...');
     
-    const openai = new OpenAI({
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true // ブラウザから直接呼び出すため
-    });
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `この画像からメニュー項目の名前だけを抽出してください。
+    // Use fetch API directly instead of OpenAI SDK (browser compatibility)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `この画像からメニュー項目の名前だけを抽出してください。
 
 ルール:
 1. 料理名・飲み物名のみを抽出
@@ -37,21 +37,28 @@ export const extractMenuItemsWithOpenAI = async (base64Data: string): Promise<st
 5. JSON配列形式で返す: ["アイテム1", "アイテム2"]
 
 画像に書かれているメニュー項目のみを返してください。`
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Data}`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Data}`
+                }
               }
-            }
-          ]
-        }
-      ],
-      max_tokens: 1000,
-      temperature: 0.3
+            ]
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.3
+      })
     });
 
-    const content = response.choices[0]?.message?.content || '[]';
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`OpenAI API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '[]';
     console.log('OpenAI レスポンス:', content);
     
     // Extract JSON array from response
@@ -71,9 +78,9 @@ export const extractMenuItemsWithOpenAI = async (base64Data: string): Promise<st
   } catch (error: any) {
     console.error("OpenAI API エラー:", error);
     
-    if (error?.status === 401) {
+    if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
       throw new Error('OpenAI API キーが無効です。');
-    } else if (error?.status === 429) {
+    } else if (error?.message?.includes('429') || error?.message?.includes('quota')) {
       throw new Error('OpenAI API の使用量制限に達しました。');
     } else if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
       throw new Error('ネットワークエラー: インターネット接続を確認してください。');
