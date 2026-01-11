@@ -11,16 +11,17 @@ AIがメニュー画像を解析して、ルーレットで選んでくれるWeb
 ## ✨ 主な機能
 
 ### 現在実装済みの機能
-- ✅ **AIメニュー解析**: 
-  - **Gemini AI**: Google Gemini API を使用（API キー必要）
-  - **Tesseract OCR**: 完全無料の OCR（API キー不要、フォールバック機能）
+- ✅ **AIメニュー解析（3段階フォールバック）**: 
+  1. **Gemini API**: Google Gemini API（最高精度、API キー必要）
+  2. **OpenAI GPT-4o-mini**: OpenAI API（高精度、API キー必要）
+  3. **Tesseract OCR**: 完全無料の OCR（API キー不要、最終手段）
 - ✅ **ルーレット抽選**: カラフルなルーレットアニメーションでランダム選択
 - ✅ **メニュー管理**: 手動でメニューの追加・編集・削除が可能
 - ✅ **ローカルストレージ**: メニューリストを自動保存
 - ✅ **レスポンシブデザイン**: モバイル・タブレット・デスクトップ対応
 - ✅ **サウンドエフェクト**: ルーレット回転時とストップ時の効果音
 - ✅ **サンプルデータ**: デモ用のサンプルメニュー読み込み機能
-- ✅ **自動フォールバック**: API 制限時に無料 OCR へ自動切り替え
+- ✅ **インテリジェントフォールバック**: API 制限時に自動で次の API へ切り替え
 
 ### 機能エントリポイント (URI)
 
@@ -41,9 +42,10 @@ AIがメニュー画像を解析して、ルーレットで選んでくれるWeb
 - **ビルドツール**: Vite 6
 - **スタイリング**: TailwindCSS (CDN)
 - **アイコン**: Lucide React
-- **AI/OCR**: 
-  - Google Gemini API (オプション - API キー必要)
-  - Tesseract.js (完全無料 - API キー不要)
+- **AI/OCR**（3段階フォールバック）: 
+  1. Google Gemini API (優先 - 最高精度)
+  2. OpenAI GPT-4o-mini (フォールバック - 高精度)
+  3. Tesseract.js (最終手段 - 完全無料)
 - **デプロイ**: GitHub Pages / Cloudflare Pages
 
 ## 📊 データモデル
@@ -190,29 +192,71 @@ webapp/
 
 ## ⚠️ 重要な注意事項
 
-### 画像解析について
-このアプリは2つの方法で画像を解析します：
+### 画像解析の3段階フォールバック
 
-#### 1. **Gemini API（推奨 - 高精度）**
-- 高精度な AI 画像解析
-- API キーが必要（無料枠: 15リクエスト/分）
+このアプリは**3つの方法**で画像を解析し、自動的にフォールバックします：
+
+#### 優先順位 1: **Gemini API（最高精度）**
+- 最も高精度な AI 画像解析
+- API キーが必要
+- 無料枠: 15リクエスト/分、1,500リクエスト/日
 - API キー: https://aistudio.google.com/apikey
+- 制限に達すると自動的に OpenAI にフォールバック
 
-#### 2. **Tesseract OCR（完全無料 - フォールバック）**
+#### 優先順位 2: **OpenAI GPT-4o-mini（高精度）**
+- 高精度な AI 画像解析
+- API キーが必要
+- 料金: 画像解析 $0.15/100万トークン（非常に安価）
+- API キー: https://platform.openai.com/api-keys
+- 無料クレジット: $5（初回登録時）
+- Gemini が制限に達した場合に自動使用
+
+#### 優先順位 3: **Tesseract OCR（完全無料）**
 - API キー不要
 - ブラウザ内で動作
-- Gemini API の制限時に自動切り替え
-- 手書き文字の認識精度は Gemini より低い
+- 全ての API が制限に達した場合に自動使用
+- 手書き文字の認識精度は AI より低い
 
-### API キーの設定（オプション）
-- **GitHub Secrets** で `GEMINI_API_KEY` を設定すると Gemini API を使用
-- 設定しない場合は自動的に Tesseract OCR を使用
-- どちらも動作するので、API キーは任意です
+### フォールバックの動作
 
-### GitHub Pages の制約
-- **静的サイトのみ**: サーバーサイド処理は不可
-- **API 呼び出し**: ブラウザから直接 API を呼び出す
-- **OCR 処理**: ブラウザ内で実行（Tesseract.js）
+```
+画像アップロード
+    ↓
+[1] Gemini API を試行
+    ├─ 成功 → メニュー抽出完了 ✅
+    └─ 失敗/制限 → [2] へ
+         ↓
+[2] OpenAI API を試行
+    ├─ 成功 → メニュー抽出完了 ✅
+    └─ 失敗/制限 → [3] へ
+         ↓
+[3] Tesseract OCR を使用
+    └─ メニュー抽出完了 ✅
+```
+
+### API キーの設定（両方推奨）
+
+#### GitHub Secrets で設定（推奨）
+1. GitHub リポジトリの **Settings** → **Secrets and variables** → **Actions**
+2. 以下の2つのシークレットを追加：
+   - `GEMINI_API_KEY`: Gemini API キー
+   - `OPENAI_API_KEY`: OpenAI API キー
+3. 両方設定することで、一方が制限に達しても継続使用可能
+
+#### ローカル開発時
+`.env.local` ファイルを作成：
+```bash
+GEMINI_API_KEY=your_gemini_key_here
+OPENAI_API_KEY=your_openai_key_here
+```
+
+### 推奨設定
+
+| シナリオ | 推奨設定 | 理由 |
+|---------|---------|------|
+| **個人利用** | Gemini のみ | 無料枠で十分 |
+| **頻繁に使用** | Gemini + OpenAI | 制限時も継続使用可能 |
+| **完全無料** | API キーなし | Tesseract のみ使用 |
 
 ## 📄 ライセンス
 

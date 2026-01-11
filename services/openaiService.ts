@@ -1,0 +1,84 @@
+
+import OpenAI from 'openai';
+
+export const extractMenuItemsWithOpenAI = async (base64Data: string): Promise<string[]> => {
+  const apiKey = process.env.OPENAI_API_KEY || 
+                 import.meta.env.VITE_OPENAI_API_KEY ||
+                 localStorage.getItem('openai_api_key') || 
+                 '';
+  
+  if (!apiKey) {
+    throw new Error('OpenAI API キーが設定されていません。');
+  }
+
+  try {
+    console.log('OpenAI API で画像解析中...');
+    
+    const openai = new OpenAI({
+      apiKey: apiKey,
+      dangerouslyAllowBrowser: true // ブラウザから直接呼び出すため
+    });
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `この画像からメニュー項目の名前だけを抽出してください。
+
+ルール:
+1. 料理名・飲み物名のみを抽出
+2. 価格、説明文、カテゴリ名は除外
+3. 手書き文字も認識する
+4. 日本語と英語の両方に対応
+5. JSON配列形式で返す: ["アイテム1", "アイテム2"]
+
+画像に書かれているメニュー項目のみを返してください。`
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Data}`
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.3
+    });
+
+    const content = response.choices[0]?.message?.content || '[]';
+    console.log('OpenAI レスポンス:', content);
+    
+    // Extract JSON array from response
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+    
+    // If no JSON found, try to parse as lines
+    const lines = content.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('-') && !line.startsWith('*'))
+      .map(line => line.replace(/^["']|["']$/g, '').replace(/^\d+\.\s*/, ''));
+    
+    return lines;
+  } catch (error: any) {
+    console.error("OpenAI API エラー:", error);
+    
+    if (error?.status === 401) {
+      throw new Error('OpenAI API キーが無効です。');
+    } else if (error?.status === 429) {
+      throw new Error('OpenAI API の使用量制限に達しました。');
+    } else if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
+      throw new Error('ネットワークエラー: インターネット接続を確認してください。');
+    }
+    
+    throw new Error(`OpenAI API エラー: ${error?.message || '不明なエラー'}`);
+  }
+};

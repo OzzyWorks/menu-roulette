@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    // Get API key from environment variable (for GitHub Actions) or .env file
-    const apiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '';
+    // Get API keys from environment variables (for GitHub Actions) or .env file
+    const geminiApiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '';
+    const openaiApiKey = process.env.OPENAI_API_KEY || env.OPENAI_API_KEY || '';
+    
+    console.log('Build-time API keys:');
+    console.log('- GEMINI_API_KEY:', geminiApiKey ? `Set (${geminiApiKey.length} chars)` : 'Not set');
+    console.log('- OPENAI_API_KEY:', openaiApiKey ? `Set (${openaiApiKey.length} chars)` : 'Not set');
     
     return {
       // GitHub Pages uses repository name as base path
@@ -17,8 +22,9 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(apiKey),
-        'process.env.GEMINI_API_KEY': JSON.stringify(apiKey)
+        'process.env.API_KEY': JSON.stringify(geminiApiKey),
+        'process.env.GEMINI_API_KEY': JSON.stringify(geminiApiKey),
+        'process.env.OPENAI_API_KEY': JSON.stringify(openaiApiKey)
       },
       build: {
         outDir: 'dist',
