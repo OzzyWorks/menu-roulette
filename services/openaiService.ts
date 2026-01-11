@@ -11,6 +11,7 @@ export const extractMenuItemsWithOpenAI = async (base64Data: string): Promise<st
 
   try {
     console.log('OpenAI API で画像解析中...');
+    console.log('API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'Not found');
     
     // Use fetch API directly instead of OpenAI SDK (browser compatibility)
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -52,8 +53,19 @@ export const extractMenuItemsWithOpenAI = async (base64Data: string): Promise<st
       })
     });
 
+    console.log('OpenAI Response Status:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorText = await response.text();
+      console.error('OpenAI Error Response:', errorText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: { message: errorText } };
+      }
+      
       throw new Error(`OpenAI API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
     }
 
@@ -76,14 +88,22 @@ export const extractMenuItemsWithOpenAI = async (base64Data: string): Promise<st
     
     return lines;
   } catch (error: any) {
-    console.error("OpenAI API エラー:", error);
+    console.error("OpenAI API 詳細エラー:", error);
+    console.error("Error type:", error.constructor.name);
+    console.error("Error message:", error.message);
+    console.error("Full error:", JSON.stringify(error, null, 2));
+    
+    // Check if it's a network/CORS error
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('OpenAI API への接続に失敗しました。CORS エラーの可能性があります。');
+    }
     
     if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
       throw new Error('OpenAI API キーが無効です。');
     } else if (error?.message?.includes('429') || error?.message?.includes('quota')) {
       throw new Error('OpenAI API の使用量制限に達しました。');
-    } else if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
-      throw new Error('ネットワークエラー: インターネット接続を確認してください。');
+    } else if (error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError')) {
+      throw new Error('ネットワークエラー: OpenAI API に接続できません。CORS の問題の可能性があります。');
     }
     
     throw new Error(`OpenAI API エラー: ${error?.message || '不明なエラー'}`);
